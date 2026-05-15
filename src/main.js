@@ -185,7 +185,7 @@ const KPI_DEFS = [
   },
   {
     id: 'k5', label: "Sizot suvi", unit: 'm', bg: '#06b6d4',
-    icon: `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`,
+    icon: `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="14"/><polyline points="8 10 12 14 16 10"/><path d="M4 19 Q8 17 12 19 Q16 21 20 19"/></svg>`,
     compute: d => d3.mean(d, r => r.sizotSuvi) ?? 0,
     fmt: v => v.toFixed(2),
   },

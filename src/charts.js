@@ -326,27 +326,39 @@ export function renderScatterPlot(data, el) {
 
   gridLines(g, y, W);
 
-  // ── Crosshair lines (hidden by default) ──
+  // CSS transition on SVG elements — avoids D3 transition conflicts
+  const fadeStyle = 'opacity 0.2s ease';
+
+  // ── Crosshair lines ──
   const chV = g.append('line').style('pointer-events', 'none').style('opacity', 0)
+    .style('transition', fadeStyle)
     .style('stroke', '#ef4444').style('stroke-width', 1.5).style('stroke-dasharray', '5,3');
   const chH = g.append('line').style('pointer-events', 'none').style('opacity', 0)
+    .style('transition', fadeStyle)
     .style('stroke', '#ef4444').style('stroke-width', 1.5).style('stroke-dasharray', '5,3');
 
   // ── Selected dot ring ──
   const selRing = g.append('circle').style('pointer-events', 'none').style('opacity', 0)
+    .style('transition', fadeStyle)
     .attr('fill', 'none').attr('stroke', '#ef4444').attr('stroke-width', 2);
 
   // ── X-axis value marker ──
-  const xMark = g.append('g').style('pointer-events', 'none').style('opacity', 0);
-  xMark.append('line').attr('y1', 0).attr('y2', 5).style('stroke', '#ef4444').style('stroke-width', 2);
+  const xMark = g.append('g').style('pointer-events', 'none').style('opacity', 0)
+    .style('transition', fadeStyle);
+  xMark.append('line').attr('y1', 0).attr('y2', 5)
+    .style('stroke', '#ef4444').style('stroke-width', 2);
   const xMarkTxt = xMark.append('text').attr('y', 16).attr('text-anchor', 'middle')
-    .style('font-size', '9.5px').style('font-weight', '700').style('fill', '#ef4444').style('font-family', 'inherit');
+    .style('font-size', '9.5px').style('font-weight', '700').style('fill', '#ef4444')
+    .style('font-family', 'inherit');
 
   // ── Y-axis value marker ──
-  const yMark = g.append('g').style('pointer-events', 'none').style('opacity', 0);
-  yMark.append('line').attr('x1', -5).attr('x2', 0).style('stroke', '#ef4444').style('stroke-width', 2);
+  const yMark = g.append('g').style('pointer-events', 'none').style('opacity', 0)
+    .style('transition', fadeStyle);
+  yMark.append('line').attr('x1', -5).attr('x2', 0)
+    .style('stroke', '#ef4444').style('stroke-width', 2);
   const yMarkTxt = yMark.append('text').attr('x', -8).attr('dy', '0.35em').attr('text-anchor', 'end')
-    .style('font-size', '9.5px').style('font-weight', '700').style('fill', '#ef4444').style('font-family', 'inherit');
+    .style('font-size', '9.5px').style('font-weight', '700').style('fill', '#ef4444')
+    .style('font-family', 'inherit');
 
   const tooltip = tip(el);
   let selected = null;
@@ -354,57 +366,47 @@ export function renderScatterPlot(data, el) {
   // ── Dots ──
   const circles = g.append('g').selectAll('circle').data(sample).join('circle')
     .attr('cx', d => x(d.Meyor)).attr('cy', d => y(d.evopo))
-    .attr('r', 0).attr('fill', d => color(d.Turi)).attr('opacity', 0.55)
+    .attr('r', 3).attr('fill', d => color(d.Turi)).attr('opacity', 0.55)
     .attr('cursor', 'pointer')
     .on('mouseover', function(e, d) {
       if (selected) return;
-      d3.select(this).transition().duration(80).attr('r', 5).attr('opacity', 1);
+      d3.select(this).interrupt().attr('r', 5).attr('opacity', 1);
       showTip(tooltip, e, el,
         `<b>${d.tuman}</b> — <span style="color:${color(d.Turi)}">${d.Turi}</span><br>` +
         `Maydon: <b>${d.area_ha.toFixed(2)} ga</b><br>` +
         `Meyor: <b>${d3.format(',.0f')(d.Meyor)} m³</b><br>` +
         `Evopo: <b>${d3.format(',.0f')(d.evopo)} m³</b>`);
     })
-    .on('mouseout', function(e, d) {
-      if (selected === d) return;
-      d3.select(this).transition().duration(80).attr('r', 3).attr('opacity', 0.55);
+    .on('mouseout', function() {
+      if (selected) return;
+      d3.select(this).interrupt().attr('r', 3).attr('opacity', 0.55);
       hideTip(tooltip);
     })
     .on('click', function(e, d) {
       e.stopPropagation();
       hideTip(tooltip);
-      if (selected === d) {
-        doDeselect();
-      } else {
-        doSelect(d);
-      }
-    })
-    .transition().duration(350).delay((d, i) => i * 0.2).attr('r', 3);
+      selected === d ? doDeselect() : doSelect(d);
+    });
 
   function doSelect(d) {
     selected = d;
     const cx = x(d.Meyor), cy = y(d.evopo);
 
-    circles.transition().duration(250)
+    // Named transition 'sc' — cancels any previous 'sc' transition cleanly
+    circles.interrupt('sc').transition('sc').duration(220)
       .attr('r',       d2 => d2 === d ? 7 : 3)
       .attr('opacity', d2 => d2 === d ? 1 : 0.04);
 
-    chV.attr('x1', cx).attr('x2', cx).attr('y1', cy).attr('y2', H)
-      .transition().duration(200).style('opacity', 1);
-    chH.attr('x1', 0).attr('x2', cx).attr('y1', cy).attr('y2', cy)
-      .transition().duration(200).style('opacity', 1);
-
-    selRing.attr('cx', cx).attr('cy', cy).attr('r', 10)
-      .transition().duration(200).style('opacity', 1);
+    chV.attr('x1', cx).attr('x2', cx).attr('y1', cy).attr('y2', H).style('opacity', 1);
+    chH.attr('x1', 0).attr('x2', cx).attr('y1', cy).attr('y2', cy).style('opacity', 1);
+    selRing.attr('cx', cx).attr('cy', cy).attr('r', 10).style('opacity', 1);
 
     xMark.attr('transform', `translate(${cx},${H})`).style('opacity', 1);
     xMarkTxt.text(d3.format(',.0f')(d.Meyor));
-
     yMark.attr('transform', `translate(0,${cy})`).style('opacity', 1);
     yMarkTxt.text(d3.format(',.0f')(d.evopo));
 
-    // Pin detailed tooltip
-    const lines = [
+    tooltip.innerHTML = [
       `<div style="font-weight:700;font-size:13px;color:#fff;margin-bottom:2px">${d.tuman}</div>`,
       `<div style="color:${color(d.Turi)};font-size:11px;margin-bottom:7px">${d.Turi}</div>`,
       `<table style="border-spacing:0 3px;font-size:11.5px;width:100%">`,
@@ -417,29 +419,23 @@ export function renderScatterPlot(data, el) {
       `</table>`,
       `<div style="color:#475569;font-size:10px;margin-top:6px;border-top:1px solid rgba(255,255,255,0.08);padding-top:5px">Yopish uchun bosing</div>`,
     ].join('');
-
-    tooltip.innerHTML = lines;
     tooltip.style.opacity = '1';
-    const tw = tooltip.offsetWidth || 160;
-    const th = tooltip.offsetHeight || 150;
-    const left = cx + m.left + tw + 16 > w ? cx + m.left - tw - 8 : cx + m.left + 14;
-    const top  = cy + m.top + th > h ? Math.max(4, cy + m.top - th) : cy + m.top;
-    tooltip.style.left = `${left}px`;
-    tooltip.style.top  = `${top}px`;
+    const tw = tooltip.offsetWidth || 160, th = tooltip.offsetHeight || 150;
+    tooltip.style.left = `${cx + m.left + tw + 16 > w ? cx + m.left - tw - 8 : cx + m.left + 14}px`;
+    tooltip.style.top  = `${cy + m.top + th > h ? Math.max(4, cy + m.top - th) : cy + m.top}px`;
   }
 
   function doDeselect() {
     selected = null;
-    circles.transition().duration(250).attr('r', 3).attr('opacity', 0.55);
-    chV.transition().duration(200).style('opacity', 0);
-    chH.transition().duration(200).style('opacity', 0);
-    selRing.transition().duration(200).style('opacity', 0);
-    xMark.transition().duration(200).style('opacity', 0);
-    yMark.transition().duration(200).style('opacity', 0);
+    circles.interrupt('sc').transition('sc').duration(220).attr('r', 3).attr('opacity', 0.55);
+    chV.style('opacity', 0);
+    chH.style('opacity', 0);
+    selRing.style('opacity', 0);
+    xMark.style('opacity', 0);
+    yMark.style('opacity', 0);
     hideTip(tooltip);
   }
 
-  // Click on background to deselect
   rootSvg.on('click', () => { if (selected) doDeselect(); });
 
   // ── Axes ──
