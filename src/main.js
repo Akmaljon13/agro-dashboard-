@@ -141,13 +141,7 @@ function render() {
     render();
   });
   renderBonitetChart(data, document.getElementById('bonitet-chart'), app.filters.bonitet);
-  renderScatterPlot(data, document.getElementById('scatter-chart'), (tuman, turi) => {
-    // Nuqta bosilganda: o'sha tumanga filter
-    app.filters.tumanlar.clear();    app.filters.tumanlar.add(tuman);
-    app.filters.ekinTurlari.clear(); app.filters.ekinTurlari.add(turi);
-    buildSidebar();
-    render();
-  });
+  renderScatterPlot(data, document.getElementById('scatter-chart'));
   renderHeatmap(data,  document.getElementById('heatmap-chart'));
   renderHorizBar(data, document.getElementById('horiz-chart'));
 

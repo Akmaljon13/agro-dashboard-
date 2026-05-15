@@ -307,58 +307,150 @@ export function renderBonitetChart(data, el, bonitetFilter) {
 // ═══════════════════════════════
 // 3. Scatter Plot — Meyor × Evopo
 // ═══════════════════════════════
-export function renderScatterPlot(data, el, onDotClick) {
+export function renderScatterPlot(data, el) {
   el.innerHTML = '';
   if (!data.length) return noData(el);
 
   const sample = data.length > 1800 ? d3.shuffle(data.slice()).slice(0, 1800) : data;
 
   const w = el.clientWidth, h = el.clientHeight;
-  const m = { top: 12, right: 14, bottom: 46, left: 52 };
+  const m = { top: 16, right: 14, bottom: 46, left: 52 };
   const W = w - m.left - m.right, H = h - m.top - m.bottom;
 
-  const svg = d3.select(el).append('svg').attr('width', w).attr('height', h)
-    .append('g').attr('transform', `translate(${m.left},${m.top})`);
+  const rootSvg = d3.select(el).append('svg').attr('width', w).attr('height', h);
+  const g = rootSvg.append('g').attr('transform', `translate(${m.left},${m.top})`);
 
   const x = d3.scaleLinear().domain(d3.extent(sample, d => d.Meyor)).nice().range([0, W]);
   const y = d3.scaleLinear().domain(d3.extent(sample, d => d.evopo)).nice().range([H, 0]);
   const color = d3.scaleOrdinal().domain(["Bug'doy", "Paxta"]).range(['#f59e0b', '#0ea5e9']);
 
-  gridLines(svg, y, W);
+  gridLines(g, y, W);
+
+  // ── Crosshair lines (hidden by default) ──
+  const chV = g.append('line').style('pointer-events', 'none').style('opacity', 0)
+    .style('stroke', '#ef4444').style('stroke-width', 1.5).style('stroke-dasharray', '5,3');
+  const chH = g.append('line').style('pointer-events', 'none').style('opacity', 0)
+    .style('stroke', '#ef4444').style('stroke-width', 1.5).style('stroke-dasharray', '5,3');
+
+  // ── Selected dot ring ──
+  const selRing = g.append('circle').style('pointer-events', 'none').style('opacity', 0)
+    .attr('fill', 'none').attr('stroke', '#ef4444').attr('stroke-width', 2);
+
+  // ── X-axis value marker ──
+  const xMark = g.append('g').style('pointer-events', 'none').style('opacity', 0);
+  xMark.append('line').attr('y1', 0).attr('y2', 5).style('stroke', '#ef4444').style('stroke-width', 2);
+  const xMarkTxt = xMark.append('text').attr('y', 16).attr('text-anchor', 'middle')
+    .style('font-size', '9.5px').style('font-weight', '700').style('fill', '#ef4444').style('font-family', 'inherit');
+
+  // ── Y-axis value marker ──
+  const yMark = g.append('g').style('pointer-events', 'none').style('opacity', 0);
+  yMark.append('line').attr('x1', -5).attr('x2', 0).style('stroke', '#ef4444').style('stroke-width', 2);
+  const yMarkTxt = yMark.append('text').attr('x', -8).attr('dy', '0.35em').attr('text-anchor', 'end')
+    .style('font-size', '9.5px').style('font-weight', '700').style('fill', '#ef4444').style('font-family', 'inherit');
 
   const tooltip = tip(el);
+  let selected = null;
 
-  svg.append('g').selectAll('circle').data(sample).join('circle')
+  // ── Dots ──
+  const circles = g.append('g').selectAll('circle').data(sample).join('circle')
     .attr('cx', d => x(d.Meyor)).attr('cy', d => y(d.evopo))
     .attr('r', 0).attr('fill', d => color(d.Turi)).attr('opacity', 0.55)
-    .attr('cursor', onDotClick ? 'pointer' : 'default')
+    .attr('cursor', 'pointer')
     .on('mouseover', function(e, d) {
+      if (selected) return;
       d3.select(this).transition().duration(80).attr('r', 5).attr('opacity', 1);
       showTip(tooltip, e, el,
         `<b>${d.tuman}</b> — <span style="color:${color(d.Turi)}">${d.Turi}</span><br>` +
         `Maydon: <b>${d.area_ha.toFixed(2)} ga</b><br>` +
-        `Meyor: <b>${d3.format(',.0f')(d.Meyor)}</b><br>` +
-        `Evopo: <b>${d3.format(',.0f')(d.evopo)}</b><br>` +
-        `<span style="color:#94a3b8;font-size:11px;">Bosib filtrlash</span>`);
+        `Meyor: <b>${d3.format(',.0f')(d.Meyor)} m³</b><br>` +
+        `Evopo: <b>${d3.format(',.0f')(d.evopo)} m³</b>`);
     })
-    .on('mouseout', function() {
+    .on('mouseout', function(e, d) {
+      if (selected === d) return;
       d3.select(this).transition().duration(80).attr('r', 3).attr('opacity', 0.55);
       hideTip(tooltip);
     })
-    .on('click', (e, d) => {
-      if (onDotClick) onDotClick(d.tuman, d.Turi);
+    .on('click', function(e, d) {
+      e.stopPropagation();
+      hideTip(tooltip);
+      if (selected === d) {
+        doDeselect();
+      } else {
+        doSelect(d);
+      }
     })
-    .transition().duration(350).delay((d, i) => i * 0.2)
-    .attr('r', 3);
+    .transition().duration(350).delay((d, i) => i * 0.2).attr('r', 3);
 
-  svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${H})`)
+  function doSelect(d) {
+    selected = d;
+    const cx = x(d.Meyor), cy = y(d.evopo);
+
+    circles.transition().duration(250)
+      .attr('r',       d2 => d2 === d ? 7 : 3)
+      .attr('opacity', d2 => d2 === d ? 1 : 0.04);
+
+    chV.attr('x1', cx).attr('x2', cx).attr('y1', cy).attr('y2', H)
+      .transition().duration(200).style('opacity', 1);
+    chH.attr('x1', 0).attr('x2', cx).attr('y1', cy).attr('y2', cy)
+      .transition().duration(200).style('opacity', 1);
+
+    selRing.attr('cx', cx).attr('cy', cy).attr('r', 10)
+      .transition().duration(200).style('opacity', 1);
+
+    xMark.attr('transform', `translate(${cx},${H})`).style('opacity', 1);
+    xMarkTxt.text(d3.format(',.0f')(d.Meyor));
+
+    yMark.attr('transform', `translate(0,${cy})`).style('opacity', 1);
+    yMarkTxt.text(d3.format(',.0f')(d.evopo));
+
+    // Pin detailed tooltip
+    const lines = [
+      `<div style="font-weight:700;font-size:13px;color:#fff;margin-bottom:2px">${d.tuman}</div>`,
+      `<div style="color:${color(d.Turi)};font-size:11px;margin-bottom:7px">${d.Turi}</div>`,
+      `<table style="border-spacing:0 3px;font-size:11.5px;width:100%">`,
+      `<tr><td style="color:#94a3b8;padding-right:10px">Maydon</td><td style="font-weight:600;color:#f8fafc">${d.area_ha.toFixed(2)} ga</td></tr>`,
+      `<tr><td style="color:#94a3b8">Meyor</td><td style="font-weight:600;color:#f8fafc">${d3.format(',.0f')(d.Meyor)} m³</td></tr>`,
+      `<tr><td style="color:#94a3b8">Evopo</td><td style="font-weight:600;color:#f8fafc">${d3.format(',.0f')(d.evopo)} m³</td></tr>`,
+      `<tr><td style="color:#94a3b8">Foiz</td><td style="font-weight:600;color:#10b981">${d.Foiz.toFixed(1)}%</td></tr>`,
+      `<tr><td style="color:#94a3b8">Bonitet</td><td style="font-weight:600;color:#f8fafc">${d.bonitet}</td></tr>`,
+      `<tr><td style="color:#94a3b8">Sizot suvi</td><td style="font-weight:600;color:#f8fafc">${d.sizotSuvi.toFixed(2)} m</td></tr>`,
+      `</table>`,
+      `<div style="color:#475569;font-size:10px;margin-top:6px;border-top:1px solid rgba(255,255,255,0.08);padding-top:5px">Yopish uchun bosing</div>`,
+    ].join('');
+
+    tooltip.innerHTML = lines;
+    tooltip.style.opacity = '1';
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 150;
+    const left = cx + m.left + tw + 16 > w ? cx + m.left - tw - 8 : cx + m.left + 14;
+    const top  = cy + m.top + th > h ? Math.max(4, cy + m.top - th) : cy + m.top;
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top  = `${top}px`;
+  }
+
+  function doDeselect() {
+    selected = null;
+    circles.transition().duration(250).attr('r', 3).attr('opacity', 0.55);
+    chV.transition().duration(200).style('opacity', 0);
+    chH.transition().duration(200).style('opacity', 0);
+    selRing.transition().duration(200).style('opacity', 0);
+    xMark.transition().duration(200).style('opacity', 0);
+    yMark.transition().duration(200).style('opacity', 0);
+    hideTip(tooltip);
+  }
+
+  // Click on background to deselect
+  rootSvg.on('click', () => { if (selected) doDeselect(); });
+
+  // ── Axes ──
+  g.append('g').attr('class', 'axis').attr('transform', `translate(0,${H})`)
     .call(d3.axisBottom(x).ticks(5).tickFormat(d => d >= 1000 ? d3.format('.0s')(d) : d));
-  svg.append('g').attr('class', 'axis')
+  g.append('g').attr('class', 'axis')
     .call(d3.axisLeft(y).ticks(5).tickFormat(d => d >= 1000 ? d3.format('.0s')(d) : d));
 
-  svg.append('text').attr('x', W / 2).attr('y', H + 40)
+  g.append('text').attr('x', W / 2).attr('y', H + 40)
     .attr('text-anchor', 'middle').style('font-size', '11px').style('fill', '#94a3b8').text('Meyor (m³)');
-  svg.append('text').attr('transform', 'rotate(-90)').attr('x', -H / 2).attr('y', -40)
+  g.append('text').attr('transform', 'rotate(-90)').attr('x', -H / 2).attr('y', -40)
     .attr('text-anchor', 'middle').style('font-size', '11px').style('fill', '#94a3b8').text('Evopo (m³)');
 }
 
