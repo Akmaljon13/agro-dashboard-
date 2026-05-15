@@ -259,10 +259,13 @@ export function renderBonitetChart(data, el, bonitetFilter) {
 
   const result = segs.map(s => {
     const row = { group: s.label };
-    VH_KEYS.forEach(k => { row[k] = 0; });
+    VH_KEYS.forEach(k => { row[k] = 0; row[k + '_area'] = 0; });
     data.forEach(d => {
       const idx = d.bonitet === maxB ? 2 : segs.findIndex(sg => d.bonitet >= sg.min && d.bonitet < sg.max);
-      if (idx !== -1 && VH_KEYS.includes(d.VH)) row[d.VH]++;
+      if (idx !== -1 && VH_KEYS.includes(d.VH)) {
+        row[d.VH]++;
+        row[d.VH + '_area'] += d.area_ha;
+      }
     });
     return row;
   });
@@ -286,11 +289,13 @@ export function renderBonitetChart(data, el, bonitetFilter) {
 
   svg.append('g').selectAll('g').data(result).join('g')
     .attr('transform', d => `translate(${x0(d.group)},0)`)
-    .selectAll('rect').data(d => VH_KEYS.map(k => ({ k, v: d[k], g: d.group }))).join('rect')
+    .selectAll('rect').data(d => VH_KEYS.map(k => ({ k, v: d[k], area: d[k + '_area'], g: d.group }))).join('rect')
       .attr('x', d => x1(d.k)).attr('width', x1.bandwidth()).attr('rx', 2)
       .attr('y', d => y(d.v)).attr('height', d => H - y(d.v))
       .attr('fill', d => color(d.k))
-      .on('mouseover', (e, d) => showTip(tooltip, e, el, `<b>${d.g}</b><br>${d.k}: <b>${d.v} ta maydon</b>`))
+      .on('mouseover', (e, d) => showTip(tooltip, e, el,
+        `<b>${d.g}</b><br>${d.k}: <b>${d.v.toLocaleString()} ta</b><br>` +
+        `Maydon: <b>${d3.format(',.1f')(d.area)} ga</b>`))
       .on('mouseout', () => hideTip(tooltip));
 
   svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${H})`)
