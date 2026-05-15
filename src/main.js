@@ -133,13 +133,7 @@ function render() {
   renderKPIs(data);
 
   updateEkinShare(data);
-  renderBarChart(data, document.getElementById('bar-chart'), (tuman, turi) => {
-    // Ustun bosilganda: o'sha tuman + ekin turiga filter
-    app.filters.tumanlar.clear();    app.filters.tumanlar.add(tuman);
-    app.filters.ekinTurlari.clear(); app.filters.ekinTurlari.add(turi);
-    buildSidebar();
-    render();
-  });
+  renderBarChart(data, document.getElementById('bar-chart'));
   renderBonitetChart(data, document.getElementById('bonitet-chart'), app.filters.bonitet);
   renderScatterPlot(data, document.getElementById('scatter-chart'));
   renderHeatmap(data,  document.getElementById('heatmap-chart'));

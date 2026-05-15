@@ -131,7 +131,7 @@ export function renderBarChart(data, el, onBarClick) {
     .attr('rx', 4)
     .attr('fill', d => `url(#${BAR_COLORS[d.k].id})`)
     .attr('filter', 'url(#bar-shadow)')
-    .attr('cursor', 'pointer')
+    .attr('cursor', onBarClick ? 'pointer' : 'default')
     .attr('y', H).attr('height', 0)
     .on('mouseover', function(e, d) {
       d3.select(this).transition().duration(120).attr('opacity', 0.82).attr('rx', 6);
@@ -410,7 +410,8 @@ export function renderScatterPlot(data, el) {
       `<div style="font-weight:700;font-size:13px;color:#fff;margin-bottom:2px">${d.tuman}</div>`,
       `<div style="color:${color(d.Turi)};font-size:11px;margin-bottom:7px">${d.Turi}</div>`,
       `<table style="border-spacing:0 3px;font-size:11.5px;width:100%">`,
-      `<tr><td style="color:#94a3b8;padding-right:10px">Maydon</td><td style="font-weight:600;color:#f8fafc">${d.area_ha.toFixed(2)} ga</td></tr>`,
+      `<tr><td style="color:#94a3b8;padding-right:10px">Holat</td><td style="font-weight:600;color:${VH_COLORS[d.VH] || '#94a3b8'}">${d.VH}</td></tr>`,
+      `<tr><td style="color:#94a3b8">Maydon</td><td style="font-weight:600;color:#f8fafc">${d.area_ha.toFixed(2)} ga</td></tr>`,
       `<tr><td style="color:#94a3b8">Meyor</td><td style="font-weight:600;color:#f8fafc">${d3.format(',.0f')(d.Meyor)} m³</td></tr>`,
       `<tr><td style="color:#94a3b8">Evopo</td><td style="font-weight:600;color:#f8fafc">${d3.format(',.0f')(d.evopo)} m³</td></tr>`,
       `<tr><td style="color:#94a3b8">Foiz</td><td style="font-weight:600;color:#10b981">${d.Foiz.toFixed(1)}%</td></tr>`,
