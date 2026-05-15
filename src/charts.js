@@ -56,16 +56,21 @@ const BAR_COLORS = {
   Paxta:    { top: '#7DD3FC', mid: '#38BDF8', bot: '#0284C7', hex: '#0EA5E9', id: 'grad-paxta'  },
 };
 
-export function renderBarChart(data, el) {
+export function renderBarChart(data, el, onBarClick) {
   el.innerHTML = '';
   if (!data.length) return noData(el);
 
-  const grouped = d3.rollup(data, v => d3.sum(v, d => d.area_ha), d => d.tuman, d => d.Turi);
+  // Group: area + count per tuman per turi
+  const grouped = d3.rollup(data, v => ({ area: d3.sum(v, d => d.area_ha), count: v.length }),
+    d => d.tuman, d => d.Turi);
+
   const rows = Array.from(grouped, ([tuman, m]) => ({
     tuman,
-    "Bug'doy": m.get("Bug'doy") || 0,
-    Paxta:    m.get("Paxta") || 0,
-    total:    (m.get("Bug'doy") || 0) + (m.get("Paxta") || 0),
+    "Bug'doy":       (m.get("Bug'doy") || {}).area  || 0,
+    "Bug'doy_count": (m.get("Bug'doy") || {}).count || 0,
+    Paxta:           (m.get("Paxta")   || {}).area  || 0,
+    Paxta_count:     (m.get("Paxta")   || {}).count || 0,
+    total: ((m.get("Bug'doy") || {}).area || 0) + ((m.get("Paxta") || {}).area || 0),
   })).sort((a, b) => b.total - a.total).slice(0, 12);
 
   const keys = ["Bug'doy", "Paxta"];
@@ -119,23 +124,29 @@ export function renderBarChart(data, el) {
 
   // Bars
   grp.selectAll('rect.bar')
-    .data(d => keys.map(k => ({ k, v: d[k], t: d.tuman })))
+    .data(d => keys.map(k => ({ k, v: d[k], count: d[k + '_count'], t: d.tuman })))
     .join('rect').attr('class', 'bar')
     .attr('x', d => x1(d.k))
     .attr('width', x1.bandwidth())
     .attr('rx', 4)
     .attr('fill', d => `url(#${BAR_COLORS[d.k].id})`)
     .attr('filter', 'url(#bar-shadow)')
+    .attr('cursor', 'pointer')
     .attr('y', H).attr('height', 0)
     .on('mouseover', function(e, d) {
       d3.select(this).transition().duration(120).attr('opacity', 0.82).attr('rx', 6);
       showTip(tooltip, e, el,
         `<b style="color:#fff">${d.t}</b><br>` +
-        `<span style="color:${BAR_COLORS[d.k].mid}">${d.k}</span>: <b>${d3.format(',.1f')(d.v)} ga</b>`);
+        `<span style="color:${BAR_COLORS[d.k].mid}">${d.k}</span><br>` +
+        `Maydon: <b>${d3.format(',.1f')(d.v)} ga</b><br>` +
+        `Maydonlar soni: <b>${d.count.toLocaleString()} ta</b>`);
     })
     .on('mouseout', function() {
       d3.select(this).transition().duration(120).attr('opacity', 1).attr('rx', 4);
       hideTip(tooltip);
+    })
+    .on('click', (e, d) => {
+      if (onBarClick) onBarClick(d.t, d.k);
     })
     .transition().duration(700).ease(d3.easeCubicOut)
     .delay((d, i) => i * 45)
@@ -291,7 +302,7 @@ export function renderBonitetChart(data, el, bonitetFilter) {
 // ═══════════════════════════════
 // 3. Scatter Plot — Meyor × Evopo
 // ═══════════════════════════════
-export function renderScatterPlot(data, el) {
+export function renderScatterPlot(data, el, onDotClick) {
   el.innerHTML = '';
   if (!data.length) return noData(el);
 
@@ -315,9 +326,23 @@ export function renderScatterPlot(data, el) {
   svg.append('g').selectAll('circle').data(sample).join('circle')
     .attr('cx', d => x(d.Meyor)).attr('cy', d => y(d.evopo))
     .attr('r', 0).attr('fill', d => color(d.Turi)).attr('opacity', 0.55)
-    .on('mouseover', (e, d) => showTip(tooltip, e, el,
-      `${d.tuman} — ${d.Turi}<br>Meyor: <b>${d3.format(',.0f')(d.Meyor)}</b><br>Evopo: <b>${d3.format(',.0f')(d.evopo)}</b>`))
-    .on('mouseout', () => hideTip(tooltip))
+    .attr('cursor', onDotClick ? 'pointer' : 'default')
+    .on('mouseover', function(e, d) {
+      d3.select(this).transition().duration(80).attr('r', 5).attr('opacity', 1);
+      showTip(tooltip, e, el,
+        `<b>${d.tuman}</b> — <span style="color:${color(d.Turi)}">${d.Turi}</span><br>` +
+        `Maydon: <b>${d.area_ha.toFixed(2)} ga</b><br>` +
+        `Meyor: <b>${d3.format(',.0f')(d.Meyor)}</b><br>` +
+        `Evopo: <b>${d3.format(',.0f')(d.evopo)}</b><br>` +
+        `<span style="color:#94a3b8;font-size:11px;">Bosib filtrlash</span>`);
+    })
+    .on('mouseout', function() {
+      d3.select(this).transition().duration(80).attr('r', 3).attr('opacity', 0.55);
+      hideTip(tooltip);
+    })
+    .on('click', (e, d) => {
+      if (onDotClick) onDotClick(d.tuman, d.Turi);
+    })
     .transition().duration(350).delay((d, i) => i * 0.2)
     .attr('r', 3);
 
@@ -339,9 +364,11 @@ export function renderHeatmap(data, el) {
   el.innerHTML = '';
   if (!data.length) return noData(el);
 
-  const grouped = d3.rollup(data, v => d3.sum(v, d => d.area_ha), d => d.gidromodul, d => d.tuman);
+  const grouped = d3.rollup(data,
+    v => ({ val: d3.sum(v, d => d.area_ha), count: v.length }),
+    d => d.gidromodul, d => d.tuman);
   const cells = [];
-  grouped.forEach((tm, gm) => tm.forEach((val, tuman) => cells.push({ gm, tuman, val })));
+  grouped.forEach((tm, gm) => tm.forEach((d, tuman) => cells.push({ gm, tuman, val: d.val, count: d.count })));
 
   const tumans = [...new Set(cells.map(c => c.tuman))].sort();
   const gms    = [...new Set(cells.map(c => c.gm))].sort((a, b) => a - b);
@@ -365,7 +392,9 @@ export function renderHeatmap(data, el) {
     .attr('width', x.bandwidth()).attr('height', y.bandwidth())
     .attr('rx', 3).attr('fill', c => colorScale(c.val)).attr('opacity', 0)
     .on('mouseover', (e, c) => showTip(tooltip, e, el,
-      `${c.tuman} — GM ${ROMAN[c.gm] || c.gm}<br>Maydon: <b>${d3.format(',.0f')(c.val)} ga</b>`))
+      `<b>${c.tuman}</b> — GM <b>${ROMAN[c.gm] || c.gm}</b><br>` +
+      `Maydon: <b>${d3.format(',.0f')(c.val)} ga</b><br>` +
+      `Maydonlar soni: <b>${c.count.toLocaleString()} ta</b>`))
     .on('mouseout', () => hideTip(tooltip))
     .transition().duration(450).attr('opacity', 0.88);
 

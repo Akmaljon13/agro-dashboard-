@@ -133,11 +133,23 @@ function render() {
   renderKPIs(data);
 
   updateEkinShare(data);
-  renderBarChart(data,     document.getElementById('bar-chart'));
+  renderBarChart(data, document.getElementById('bar-chart'), (tuman, turi) => {
+    // Ustun bosilganda: o'sha tuman + ekin turiga filter
+    app.filters.tumanlar.clear();    app.filters.tumanlar.add(tuman);
+    app.filters.ekinTurlari.clear(); app.filters.ekinTurlari.add(turi);
+    buildSidebar();
+    render();
+  });
   renderBonitetChart(data, document.getElementById('bonitet-chart'), app.filters.bonitet);
-  renderScatterPlot(data,  document.getElementById('scatter-chart'));
-  renderHeatmap(data,      document.getElementById('heatmap-chart'));
-  renderHorizBar(data,     document.getElementById('horiz-chart'));
+  renderScatterPlot(data, document.getElementById('scatter-chart'), (tuman, turi) => {
+    // Nuqta bosilganda: o'sha tumanga filter
+    app.filters.tumanlar.clear();    app.filters.tumanlar.add(tuman);
+    app.filters.ekinTurlari.clear(); app.filters.ekinTurlari.add(turi);
+    buildSidebar();
+    render();
+  });
+  renderHeatmap(data,  document.getElementById('heatmap-chart'));
+  renderHorizBar(data, document.getElementById('horiz-chart'));
 
   app.table.page = 1;
   renderTable(data);
