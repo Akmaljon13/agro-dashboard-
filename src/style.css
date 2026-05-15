@@ -1,0 +1,170 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ── Loading spinner ── */
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #10b981;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Chart containers ── */
+.chart-box { position: relative; }
+
+/* Mobile heights */
+.chart-main { height: 220px; }
+.chart-sub  { height: 200px; }
+
+/* Tablet */
+@media (min-width: 640px) {
+  .chart-main { height: 240px; }
+  .chart-sub  { height: 210px; }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .chart-main { height: 265px; }
+  .chart-sub  { height: 230px; }
+}
+
+/* ── Sidebar overlay ── */
+#sidebar-overlay { transition: opacity 0.3s ease; }
+
+/* ── Mobile: hide overflow on table ── */
+@media (max-width: 640px) {
+  th, td { padding: 7px 10px; font-size: 11.5px; }
+  .badge { font-size: 10px; padding: 1px 6px; }
+}
+
+/* ── Tooltip ── */
+.chart-tooltip {
+  position: absolute;
+  background: rgba(15,23,42,0.88);
+  color: #f8fafc;
+  padding: 7px 11px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.65;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  white-space: nowrap;
+  z-index: 200;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* ── D3 axis ── */
+.axis text { font-size: 11px; fill: #64748b; font-family: inherit; }
+.axis line, .axis path { stroke: #e2e8f0; }
+
+/* ── Chart legend ── */
+.legend-item {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; color: #64748b;
+}
+.legend-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%; flex-shrink: 0;
+}
+
+/* ── Badge ── */
+.badge {
+  display: inline-block;
+  padding: 2px 8px; border-radius: 99px;
+  font-size: 11px; font-weight: 500;
+}
+
+/* ── Table ── */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+thead tr { background: #f8fafc; }
+th {
+  padding: 10px 13px;
+  font-weight: 600; color: #475569;
+  text-align: left; border-bottom: 1px solid #e2e8f0;
+  cursor: pointer; user-select: none; white-space: nowrap;
+}
+th:hover { color: #1e293b; background: #f1f5f9; }
+th.active { color: #059669; background: #ecfdf5; }
+td { padding: 8px 13px; border-bottom: 1px solid #f1f5f9; color: #475569; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #f8fafc; }
+
+/* ── Dual range slider ── */
+.dual-range-wrap {
+  position: relative; height: 20px; margin: 4px 4px 0;
+}
+.range-track {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 100%; height: 5px; background: #e2e8f0; border-radius: 3px;
+  pointer-events: none;
+}
+.range-fill {
+  position: absolute; height: 100%;
+  background: #10b981; border-radius: 3px;
+}
+.dual-range-wrap input[type="range"] {
+  position: absolute; width: 100%; height: 100%;
+  -webkit-appearance: none; appearance: none;
+  background: transparent; outline: none;
+  margin: 0; padding: 0; pointer-events: none; cursor: pointer;
+}
+.dual-range-wrap input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 15px; height: 15px; border-radius: 50%;
+  background: #10b981; border: 2.5px solid white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.22);
+  pointer-events: all; cursor: grab;
+}
+.dual-range-wrap input[type="range"]::-moz-range-thumb {
+  width: 15px; height: 15px; border-radius: 50%;
+  background: #10b981; border: 2.5px solid white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.22);
+  pointer-events: all; cursor: grab;
+}
+
+/* ── Sidebar filter section ── */
+.filter-section { border: 1px solid #f1f5f9; border-radius: 12px; overflow: hidden; }
+.filter-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; background: #f8fafc; cursor: pointer; user-select: none;
+}
+.filter-header:hover { background: #f1f5f9; }
+.filter-title {
+  font-size: 10px; font-weight: 700; color: #64748b;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.filter-body { padding: 8px 10px; background: white; }
+.chevron { transition: transform 0.2s; color: #94a3b8; }
+.chevron.closed { transform: rotate(-90deg); }
+
+/* ── Checkbox item ── */
+.chk-item {
+  display: flex; align-items: center; gap: 7px;
+  padding: 4px 6px; border-radius: 7px; cursor: pointer;
+}
+.chk-item:hover { background: #f1f5f9; }
+.chk-item input[type="checkbox"] { accent-color: #10b981; width: 13px; height: 13px; cursor: pointer; flex-shrink: 0; }
+.chk-item label { font-size: 12.5px; color: #475569; cursor: pointer; line-height: 1.3; }
+
+/* ── Pagination ── */
+.pagination { display: flex; align-items: center; gap: 4px; }
+.page-btn {
+  width: 30px; height: 30px; border-radius: 8px; font-size: 12px;
+  color: #475569; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.15s; border: none; background: transparent;
+}
+.page-btn:hover:not(:disabled) { background: #f1f5f9; }
+.page-btn.active { background: #10b981; color: white; font-weight: 600; }
+.page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
