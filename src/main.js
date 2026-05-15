@@ -172,10 +172,10 @@ const KPI_DEFS = [
     fmt: v => v.toFixed(1),
   },
   {
-    id: 'k2', label: "Yetkazilgan suv", unit: 'mln m³', bg: '#3b82f6',
+    id: 'k2', label: "Yetkazilgan suv", unit: '%', bg: '#3b82f6',
     icon: `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>`,
-    compute: d => d3.sum(d, r => r.Meyor) / 1e6,
-    fmt: v => v.toFixed(2),
+    compute: d => { const m = d3.sum(d, r => r.Meyor); return m > 0 ? (d3.sum(d, r => r.evopo) / m) * 100 : 0; },
+    fmt: v => v.toFixed(1),
   },
   {
     id: 'k3', label: "Sarflangan suv", unit: 'mln m³', bg: '#f59e0b',
